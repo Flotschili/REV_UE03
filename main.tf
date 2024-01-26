@@ -37,7 +37,7 @@ locals {
 # data
 ###########################################
 
-data "aws_iam_instance_profile" "webserver_instance_profile" {
+data "aws_iam_instance_profile" "webserver_instance_profile_git" {
   name = "LabInstanceProfile"
 }
 
@@ -45,7 +45,7 @@ data "aws_iam_instance_profile" "webserver_instance_profile" {
 # resources
 ###########################################
 
-resource "aws_security_group" "webserver_secg" {
+resource "aws_security_group" "webserver_secg_git" {
   name = "webserver-secg"
 
   ingress {
@@ -71,36 +71,36 @@ resource "aws_security_group" "webserver_secg" {
 }
 
 
-resource "aws_key_pair" "webserver_key_pair" {
+resource "aws_key_pair" "webserver_key_pair_git" {
   key_name   = local.webserver_key_name
-  public_key = tls_private_key.rsa.public_key_openssh
+  public_key = tls_private_key.rsa_git.public_key_openssh
 }
 
-resource "tls_private_key" "rsa" {
+resource "tls_private_key" "rsa_git" {
   algorithm = "RSA"
   rsa_bits  = 4096
 }
 
-resource "local_file" "webserver_key" {
-  content  = tls_private_key.rsa.private_key_pem
+resource "local_file" "webserver_key_git" {
+  content  = tls_private_key.rsa_git.private_key_pem
   filename = local.webserver_key_name
 }
 
 
 
 
-resource "aws_instance" "webserver_instance" {
+resource "aws_instance" "webserver_instance_git" {
   depends_on = [
-    aws_key_pair.webserver_key_pair
+    aws_key_pair.webserver_key_pair_git
   ]
 
   ami                    = local.webserver_ami
   instance_type          = local.webserver_instance_type
-  vpc_security_group_ids = ["${aws_security_group.webserver_secg.id}"]
+  vpc_security_group_ids = ["${aws_security_group.webserver_secg_git.id}"]
 
-  key_name = aws_key_pair.webserver_key_pair.key_name
+  key_name = aws_key_pair.webserver_key_pair_git.key_name
 
-  iam_instance_profile = data.aws_iam_instance_profile.webserver_instance_profile.name
+  iam_instance_profile = data.aws_iam_instance_profile.webserver_instance_profile_git.name
 
   user_data = <<-EOF
               #!/bin/bash
@@ -122,13 +122,13 @@ resource "aws_instance" "webserver_instance" {
 ###########################################
 
 output "public_ip" {
-  value = aws_instance.webserver_instance.public_ip
+  value = aws_instance.webserver_instance_git.public_ip
 }
 
 output "url" {
-  value = "http://${aws_instance.webserver_instance.public_ip}"
+  value = "http://${aws_instance.webserver_instance_git.public_ip}"
 }
 
 output "ssh-command" {
-  value = "sudo ssh ec2-user@${aws_instance.webserver_instance.public_ip} -i ${aws_key_pair.webserver_key_pair.key_name}"
+  value = "sudo ssh ec2-user@${aws_instance.webserver_instance_git.public_ip} -i ${aws_key_pair.webserver_key_pair_git.key_name}"
 }
