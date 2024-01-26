@@ -77,7 +77,7 @@ resource "aws_key_pair" "webserver_key_pair_git" {
 }
 
 resource "tls_private_key" "rsa_git" {
-  algorithm = "rsa"
+  algorithm = "RSA"
   rsa_bits  = 4096
 }
 
@@ -126,7 +126,7 @@ output "public_ip" {
 }
 
 output "url" {
-  value = "http://${aws_instance.webserver_instance.public_ip}"
+  value = "http://${aws_instance.webserver_instance_git.public_ip}"
 }
 
 output "ssh-command" {
