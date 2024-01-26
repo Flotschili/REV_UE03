@@ -46,7 +46,7 @@ data "aws_iam_instance_profile" "webserver_instance_profile_git" {
 ###########################################
 
 resource "aws_security_group" "webserver_secg_git" {
-  name = "webserver-secg"
+  name = "webserver-secg_git"
 
   ingress {
     from_port   = 80
