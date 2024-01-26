@@ -1,4 +1,15 @@
 ###########################################
+# backend
+###########################################
+terraform {
+  backend "s3" {
+    bucket = "flos-git-ref-bucket-01"
+    key    = "rev-demo.tf"
+    region = "us-east-1"
+  }
+}
+
+###########################################
 # provider
 ###########################################
 
@@ -33,24 +44,6 @@ data "aws_iam_instance_profile" "webserver_instance_profile" {
 ###########################################
 # resources
 ###########################################
-
-resource "aws_s3_bucket" "webserver_www_root" {
-  bucket_prefix = "webserver-www-"
-}
-
-resource "aws_s3_bucket_acl" "webserver_www_root_acl" {
-  bucket = aws_s3_bucket.webserver_www_root.id
-  acl    = "private"
-}
-
-resource "aws_s3_object" "webserver_www_files" {
-  for_each = fileset("www/", "*")
-  bucket   = aws_s3_bucket.webserver_www_root.id
-  key      = each.value
-  source   = "www/${each.value}"
-  etag     = filemd5("www/${each.value}")
-}
-
 
 resource "aws_security_group" "webserver_secg" {
   name = "webserver-secg"
@@ -110,22 +103,14 @@ resource "aws_instance" "webserver_instance" {
   iam_instance_profile = data.aws_iam_instance_profile.webserver_instance_profile.name
 
   user_data = <<-EOF
-            #!/bin/bash
-
-            echo "start installing webserver"
-            sudo yum update -y
-            sudo yum install -y httpd
-            sudo systemctl start httpd
-            sudo systemctl enable httpd
-            usermod -a -G apache ec2-user
-            
-            echo "download http root files"
-            sudo rm -rf "/var/www/html/*"
-            sudo aws s3 sync "s3://${aws_s3_bucket.webserver_www_root.id}" /var/www/html
-            sudo chmod 644 "/var/www/html/*"
-
-            echo "install successful"
-          EOF
+              #!/bin/bash
+              sudo yum update -y
+              sudo yum install -y httpd
+              sudo systemctl start httpd
+              sudo systemctl enable httpd
+              usermod -a -G apache ec2-user
+              echo "<html><body><h1>Hello World from $(hostname -f)</h1></body></html>" > /var/www/html/index.html
+            EOF
 
   tags = {
     Name = "webserver"
@@ -146,8 +131,4 @@ output "url" {
 
 output "ssh-command" {
   value = "sudo ssh ec2-user@${aws_instance.webserver_instance.public_ip} -i ${aws_key_pair.webserver_key_pair.key_name}"
-}
-
-output "bucket" {
-  value = aws_s3_bucket.webserver_www_root.id
 }
